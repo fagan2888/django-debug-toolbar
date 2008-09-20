@@ -5,6 +5,26 @@ from django.db.backends import util
 from django.template.loader import render_to_string
 from django.utils import simplejson
 
+from pprint import pformat
+import traceback, os
+
+# Figure out some paths
+import django, SocketServer
+django_path = os.path.realpath(os.path.dirname(django.__file__))
+socketserver_path = os.path.realpath(os.path.dirname(SocketServer.__file__))
+
+def tidy_up_stacktrace(stacktrace):
+    # We only care about stacktrace entries that:
+    #    1. Aren't part of django
+    #    2. Aren't part of SocketServer (used by Django's dev server)
+    #    2. Aren't the last entry (which is inside our stacktracing code)
+    return [
+        (s[0], s[1], s[2], s[3])
+        for s in stacktrace[:-1]
+        if django_path not in os.path.realpath(s[0])
+        and socketserver_path not in os.path.realpath(s[0])
+    ]
+
 class DatabaseStatTracker(util.CursorDebugWrapper):
     """
     Replacement for CursorDebugWrapper which stores additional information
@@ -16,11 +36,14 @@ class DatabaseStatTracker(util.CursorDebugWrapper):
             return self.cursor.execute(sql, params)
         finally:
             stop = time.time()
+            stacktrace = tidy_up_stacktrace(traceback.extract_stack())
             # We keep `sql` to maintain backwards compatibility
             self.db.queries.append({
                 'sql': self.db.ops.last_executed_query(self.cursor, sql, params),
                 'time': stop - start,
                 'raw_sql': sql,
+                'stacktrace': stacktrace,
+                'p_stacktrace': pformat(stacktrace),
                 'params': simplejson.dumps(params),
             })
 util.CursorDebugWrapper = DatabaseStatTracker

@@ -4,6 +4,7 @@
 		<tr>
 			<th>Time&nbsp;(ms)</th>
 			<th>Query</th>
+			<th>Stacktrace</th>
 			<th>Action</th>
 		</tr>
 	</thead>
@@ -12,7 +13,8 @@
 			<tr class="{% cycle 'row1' 'row2' %}">
 				<td>{{ query.time|floatformat:"4" }}</td>
 				<td><pre>{{ query.sql|wordwrap:80|escape }}</pre></td>
-				<td><a href="/__debug__/sql_explain/?sql={{ query.raw_sql|urlencode }}&params={{ query.params|urlencode }}&time={{ query.time|floatformat:"4"|urlencode }}">EXPLAIN</a></td>
+				<td><pre>{{ query.p_stacktrace }}</pre></td>
+				<td><a href="/__debug__/sql_explain/?sql={{ query.raw_sql|urlencode }}&amp;params={{ query.params|urlencode }}&amp;time={{ query.time|floatformat:"4"|urlencode }}">EXPLAIN</a></td>
 			</tr>
 		{% endfor %}
 	</tbody>
